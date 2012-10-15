@@ -34,7 +34,7 @@ src_prepare() {
 	fi
 
 	if use shared-libs ; then
-		epatch "${FILESDIR}"/${P}.patch
+		epatch "${FILESDIR}"/${P}-shared_lib.patch
 	fi
 }
 
