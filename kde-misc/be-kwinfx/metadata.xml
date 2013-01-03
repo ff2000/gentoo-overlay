@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pkgmetadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd">
+<pkgmetadata>
+	<use>
+		<flag name="animated">Enables kwin to perform various animations,
+		which can be configured extensively.
+		</flag>
+		<flag name="clock">Enables a clock (time+date) as kwin effect.
+		</flag>
+		<flag name="faded">Fade windows when stacking order changes.
+		</flag>
+	</use>
+</pkgmetadata>
+

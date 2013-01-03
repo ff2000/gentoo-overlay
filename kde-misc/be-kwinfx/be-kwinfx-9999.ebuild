@@ -14,7 +14,7 @@ EGIT_REPO_URI="clone git://git.code.sf.net/p/bekwinfx/code"
 LICENSE="GPL"
 SLOT="0"
 KEYWORDS="-*"
-IUSE="animated clock faded"
+IUSE="+animated clock faded"
 # distorted reflected : currently broken
 
 DEPEND="
