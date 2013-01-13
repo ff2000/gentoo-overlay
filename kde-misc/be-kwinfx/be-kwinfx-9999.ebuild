@@ -14,7 +14,7 @@ EGIT_REPO_URI="clone git://git.code.sf.net/p/bekwinfx/code"
 LICENSE="GPL"
 SLOT="0"
 KEYWORDS="-*"
-IUSE="+animated clock faded"
+IUSE="+animated clock distorted faded reflected"
 # distorted reflected : currently broken
 
 DEPEND="
@@ -28,7 +28,9 @@ src_configure() {
 	mycmakeargs=(
 		$(cmake-utils_use_build animated ANIMATED)
 		$(cmake-utils_use_build clock CLOCK)
+		$(cmake-utils_use_build distorted DISTORTED)
 		$(cmake-utils_use_build faded FADED)
+		$(cmake-utils_use_build reflected REFLECTED)
 	)
 	kde4-base_src_configure
 }
