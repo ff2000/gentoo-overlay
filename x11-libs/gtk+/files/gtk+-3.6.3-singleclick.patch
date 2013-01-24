@@ -1,0 +1,255 @@
+diff -ru gtk+-3.6.3.org/gtk/gtkfilechooserdefault.c gtk+-3.6.3/gtk/gtkfilechooserdefault.c
+--- gtk+-3.6.3.org/gtk/gtkfilechooserdefault.c	2013-01-24 13:11:44.464882508 +0100
++++ gtk+-3.6.3/gtk/gtkfilechooserdefault.c	2013-01-24 13:20:42.998923141 +0100
+@@ -195,6 +195,13 @@
+   SHORTCUT_TYPE_RECENT
+ } ShortcutType;
+ 
++enum
++{
++  CLICK_POLICY_SINGLE,
++  CLICK_POLICY_DOUBLE
++};
++
++
+ #define MODEL_ATTRIBUTES "standard::name,standard::type,standard::display-name," \
+                          "standard::is-hidden,standard::is-backup,standard::size," \
+                          "standard::content-type,time::modified"
+@@ -256,6 +263,7 @@
+ #define NUM_LINES 45
+ #define NUM_CHARS 60
+ 
++#define SETTINGS_KEY_CLICK_POLICY        "click-policy"
+ #define SETTINGS_KEY_LAST_FOLDER_URI     "last-folder-uri"
+ #define SETTINGS_KEY_LOCATION_MODE       "location-mode"
+ #define SETTINGS_KEY_SHOW_HIDDEN         "show-hidden"
+@@ -748,6 +756,7 @@
+   impl->sort_order = GTK_SORT_ASCENDING;
+   impl->recent_manager = gtk_recent_manager_get_default ();
+   impl->create_folders = TRUE;
++  impl->single_click_activate = FALSE;
+ 
+   gtk_orientable_set_orientation (GTK_ORIENTABLE (impl),
+                                   GTK_ORIENTATION_VERTICAL);
+@@ -4314,6 +4323,43 @@
+   return TRUE;
+ }
+ 
++/* When single-click is enabled, display a hand when cursor
++ * is above a file */
++static gboolean
++list_motion_cb (GtkWidget *widget,
++                GdkEventMotion *event,
++                GtkFileChooserDefault *impl)
++{
++  static GdkCursor *hand_cursor = NULL;
++  GdkDisplay *current_display;
++
++  if (!impl->single_click_activate || impl->has_busy_cursor)
++    return FALSE;
++
++  current_display = gtk_widget_get_display (widget);
++  g_assert (current_display != NULL);
++
++  if (hand_cursor != NULL &&
++      gdk_cursor_get_display (hand_cursor) != current_display)
++  {
++    g_object_unref (hand_cursor);
++    hand_cursor = NULL;
++  }
++
++  if (hand_cursor == NULL)
++    hand_cursor = gdk_cursor_new_for_display (current_display,
++                                              GDK_HAND2);
++
++  if (gtk_tree_view_get_path_at_pos (GTK_TREE_VIEW (widget),
++                                     event->x, event->y,
++                                     NULL, NULL, NULL, NULL))
++    gdk_window_set_cursor (gtk_widget_get_window (widget), hand_cursor);
++  else
++    gdk_window_set_cursor (gtk_widget_get_window (widget), NULL);
++
++  return FALSE;
++}
++
+ typedef struct {
+   OperationMode operation_mode;
+   gint general_column;
+@@ -4432,6 +4478,8 @@
+ 		    G_CALLBACK (list_popup_menu_cb), impl);
+   g_signal_connect (impl->browse_files_tree_view, "button-press-event",
+ 		    G_CALLBACK (list_button_press_event_cb), impl);
++  g_signal_connect (impl->browse_files_tree_view, "motion_notify_event",
++                    G_CALLBACK (list_motion_cb), impl);
+ 
+   g_signal_connect (impl->browse_files_tree_view, "drag-data-received",
+                     G_CALLBACK (file_list_drag_data_received_cb), impl);
+@@ -6035,11 +6083,13 @@
+   LocationMode location_mode;
+   gboolean show_hidden;
+   gboolean show_size_column;
++  int click_policy;
+   gint sort_column;
+   GtkSortType sort_order;
+ 
+   settings_ensure (impl);
+ 
++  click_policy = g_settings_get_enum (impl->settings, SETTINGS_KEY_CLICK_POLICY);
+   location_mode = g_settings_get_enum (impl->settings, SETTINGS_KEY_LOCATION_MODE);
+   show_hidden = g_settings_get_boolean (impl->settings, SETTINGS_KEY_SHOW_HIDDEN);
+   show_size_column = g_settings_get_boolean (impl->settings, SETTINGS_KEY_SHOW_SIZE_COLUMN);
+@@ -6050,6 +6100,10 @@
+ 
+   gtk_file_chooser_set_show_hidden (GTK_FILE_CHOOSER (impl), show_hidden);
+ 
++  impl->single_click_activate = click_policy == CLICK_POLICY_SINGLE;
++  _gtk_tree_view_set_single_click_activate (GTK_TREE_VIEW (impl->browse_files_tree_view), 
++                                            impl->single_click_activate);
++
+   impl->show_size_column = show_size_column;
+   gtk_tree_view_column_set_visible (impl->list_size_column, show_size_column);
+ 
+@@ -6328,6 +6382,8 @@
+ 
+   if (cursor)
+     g_object_unref (cursor);
++
++  impl->has_busy_cursor = busy;
+ }
+ 
+ /* Creates a sort model to wrap the file system model and sets it on the tree view */
+diff -ru gtk+-3.6.3.org/gtk/gtkfilechooserprivate.h gtk+-3.6.3/gtk/gtkfilechooserprivate.h
+--- gtk+-3.6.3.org/gtk/gtkfilechooserprivate.h	2013-01-24 13:11:44.479882509 +0100
++++ gtk+-3.6.3/gtk/gtkfilechooserprivate.h	2013-01-24 13:22:06.272929424 +0100
+@@ -293,6 +293,7 @@
+   guint use_preview_label : 1;
+   guint select_multiple : 1;
+   guint show_hidden : 1;
++  guint single_click_activate : 1;
+   guint do_overwrite_confirmation : 1;
+   guint list_sort_ascending : 1;
+   guint changing_folder : 1;
+@@ -302,6 +303,7 @@
+   guint has_search : 1;
+   guint show_size_column : 1;
+   guint create_folders : 1;
++  guint has_busy_cursor : 1;
+ 
+ #if 0
+   guint shortcuts_drag_outside : 1;
+diff -ru gtk+-3.6.3.org/gtk/gtktreeprivate.h gtk+-3.6.3/gtk/gtktreeprivate.h
+--- gtk+-3.6.3.org/gtk/gtktreeprivate.h	2013-01-24 13:11:44.465882508 +0100
++++ gtk+-3.6.3/gtk/gtktreeprivate.h	2013-01-24 13:22:51.307932822 +0100
+@@ -157,6 +157,8 @@
+ GtkCellAreaContext *_gtk_tree_view_column_get_context         (GtkTreeViewColumn  *column);
+ void              _gtk_tree_view_reset_header_styles       (GtkTreeView        *tree_view);
+ 
++void              _gtk_tree_view_set_single_click_activate (GtkTreeView *tree_view,
++                                                            gboolean single_click_activate);
+ 
+ G_END_DECLS
+ 
+diff -ru gtk+-3.6.3.org/gtk/gtktreeview.c gtk+-3.6.3/gtk/gtktreeview.c
+--- gtk+-3.6.3.org/gtk/gtktreeview.c	2013-01-24 13:11:44.459882507 +0100
++++ gtk+-3.6.3/gtk/gtktreeview.c	2013-01-24 13:26:15.250948210 +0100
+@@ -512,6 +512,8 @@
+   guint draw_keyfocus : 1;
+   guint model_setup : 1;
+   guint in_column_drag : 1;
++
++  guint single_click_activate : 1;
+ };
+ 
+ 
+@@ -3363,6 +3365,44 @@
+ }
+ 
+ static gboolean
++gtk_tree_view_button_release_single_click (GtkTreeView *tree_view,
++                                           GdkEventButton *event)
++{
++  gboolean retval = FALSE;
++
++  if (tree_view->priv->single_click_activate &&
++     (gtk_tree_selection_get_mode (tree_view->priv->selection) != GTK_SELECTION_MULTIPLE ||
++     (event->state & (GDK_SHIFT_MASK | GDK_CONTROL_MASK)) == 0))
++  {
++    GtkTreePath *path;
++    GtkTreeViewColumn *column;
++
++    gtk_tree_view_get_path_at_pos (tree_view,
++                                   event->x, event->y,
++                                   &path,
++                                   &column,
++                                   NULL,
++                                   NULL);
++    if (path != NULL)
++    {
++      GtkRBTree *tree = NULL;
++      GtkRBNode *node = NULL;
++
++      _gtk_tree_view_find_node (tree_view, path, &tree, &node);
++      if (node != NULL && (GTK_RBNODE_FLAG_SET (node, GTK_RBNODE_IS_SELECTED)))
++      {
++        gtk_tree_view_row_activated (tree_view, path, column);
++        retval = TRUE;
++      }
++    }
++
++    gtk_tree_path_free (path);
++  }
++
++  return retval;
++}
++
++static gboolean
+ gtk_tree_view_button_release (GtkWidget      *widget,
+ 			      GdkEventButton *event)
+ {
+@@ -3381,7 +3421,7 @@
+     return gtk_tree_view_button_release_column_resize (widget, event);
+ 
+   if (tree_view->priv->button_pressed_node == NULL)
+-    return FALSE;
++    return gtk_tree_view_button_release_single_click (tree_view, event);
+ 
+   if (event->button == GDK_BUTTON_PRIMARY)
+     {
+@@ -6997,6 +7037,15 @@
+   gtk_widget_queue_resize (GTK_WIDGET (tree_view));
+ }
+ 
++void
++_gtk_tree_view_set_single_click_activate (GtkTreeView *tree_view,
++ gboolean single_click_activate)
++{
++  g_return_if_fail (GTK_IS_TREE_VIEW (tree_view));
++
++  tree_view->priv->single_click_activate = single_click_activate;
++}
++
+ /* Drag-and-drop */
+ 
+ static void
+diff -ru gtk+-3.6.3.org/gtk/org.gtk.Settings.FileChooser.gschema.xml gtk+-3.6.3/gtk/org.gtk.Settings.FileChooser.gschema.xml
+--- gtk+-3.6.3.org/gtk/org.gtk.Settings.FileChooser.gschema.xml	2013-01-24 13:11:44.463882508 +0100
++++ gtk+-3.6.3/gtk/org.gtk.Settings.FileChooser.gschema.xml	2013-01-24 13:28:20.870957688 +0100
+@@ -33,7 +33,18 @@
+     <value nick='descending' value='1'/>
+   </enum>
+ 
++  <enum id="org.gtk.Settings.FileChooser.ClickPolicy">
++    <value nick="single" value="0"/>
++    <value nick="double" value="1"/>
++  </enum>
++
++
+   <schema id='org.gtk.Settings.FileChooser'>
++    <key name="click-policy" enum="org.gtk.Settings.FileChooser.ClickPolicy">
++      <default>'double'</default>
++      <summary>Type of click used to launch/open files</summary>
++      <description>Possible values are "single" to launch files on a single click,  or "double" to launch them on a double click.</description>
++    </key>
+     <key name='last-folder-uri' type='s'>
+       <default>""</default>
+     </key>
