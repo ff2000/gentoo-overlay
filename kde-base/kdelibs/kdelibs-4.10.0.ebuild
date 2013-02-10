@@ -138,8 +138,9 @@ PATCHES=(
 	"${FILESDIR}/${PN}-4.6.3-no_suid_kdeinit.patch"
 	"${FILESDIR}/${PN}-4.8.1-norpath.patch"
 	"${FILESDIR}/${PN}-4.9.3-werror.patch"
-	"${FILESDIR}/${PN}-4.10.0-udisks2_opticaldisc_spinup.patch"
     "${FILESDIR}/${PN}-4.10.0-no_udisks1.patch"
+	"${FILESDIR}/0000-solid-remove-workarounds.patch"
+	"${FILESDIR}/0001-solid-disk-scan.patch"
 )
 
 pkg_pretend() {
