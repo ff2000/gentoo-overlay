@@ -108,6 +108,7 @@ RDEPEND="${COMMONDEPEND}
 	udev? ( app-misc/media-player-info )
 "
 PDEPEND="
+	udisks? ( kde-misc/soliddiskscan )
 	$(add_kdebase_dep katepart)
 	|| (
 		$(add_kdebase_dep kfmclient)
