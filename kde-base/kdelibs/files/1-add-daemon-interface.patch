@@ -1,0 +1,78 @@
+Index: kdelibs-4.10.0/solid/solid/backends/udisks2/diskscannerinterface.cpp
+===================================================================
+--- /dev/null
++++ kdelibs-4.10.0/solid/solid/backends/udisks2/diskscannerinterface.cpp
+@@ -0,0 +1,32 @@
++#include "diskscannerinterface.h"
++
++#include <QtCore/QDebug>
++#include <QtDBus/QDBusReply>
++
++using namespace Solid::Backends::UDisks2;
++
++#define INTERFACE "org.kde.Solid.DiskScanner"
++
++const int DiskScannerInterface::defaultTimeout = 1000 * 60 * 5; // 5 minutes
++
++DiskScannerInterface::DiskScannerInterface(QObject* parent)
++    : QDBusAbstractInterface(INTERFACE, "/", INTERFACE, QDBusConnection::sessionBus(), parent)
++{
++    Q_ASSERT(parent != 0);
++    setTimeout(defaultTimeout);
++}
++
++DiskScannerInterface::~DiskScannerInterface()
++{
++}
++
++Solid::OpticalDisc::ContentTypes DiskScannerInterface::getContent(const QString& udi, const QString& file)
++{
++    QDBusReply<int> result = call(QLatin1String("getContent"), QVariant::fromValue(udi), QVariant::fromValue(file));
++    if (!result.isValid()) {
++        qWarning() << "D-Bus error while calling getContent: " << result.error();
++        return Solid::OpticalDisc::NoContent;
++    }
++    return static_cast<Solid::OpticalDisc::ContentTypes>(result.value());
++}
++// kate: indent-mode cstyle; indent-width 4; replace-tabs on; 
+Index: kdelibs-4.10.0/solid/solid/backends/udisks2/diskscannerinterface.h
+===================================================================
+--- /dev/null
++++ kdelibs-4.10.0/solid/solid/backends/udisks2/diskscannerinterface.h
+@@ -0,0 +1,36 @@
++#ifndef DISKSCANNERPROXY_CPP_1360423945
++#define DISKSCANNERPROXY_CPP_1360423945
++
++#include <QtDBus/QDBusAbstractInterface>
++
++#include "solid/opticaldisc.h"
++
++namespace Solid
++{
++namespace Backends
++{
++namespace UDisks2
++{
++
++/*
++ * Proxy class for interface org.kde.Solid.DiskScanner
++ */
++class DiskScannerInterface: public QDBusAbstractInterface
++{
++    Q_OBJECT
++public:
++
++    static const int defaultTimeout;
++
++    DiskScannerInterface(QObject* parent);
++
++    ~DiskScannerInterface();
++
++    Solid::OpticalDisc::ContentTypes getContent(const QString& udi, const QString& file);
++};
++
++}
++}
++}
++#endif
++// kate: indent-mode cstyle; indent-width 4; replace-tabs on; 

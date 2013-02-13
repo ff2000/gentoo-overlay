@@ -140,8 +140,11 @@ PATCHES=(
 	"${FILESDIR}/${PN}-4.8.1-norpath.patch"
 	"${FILESDIR}/${PN}-4.9.3-werror.patch"
     "${FILESDIR}/${PN}-4.10.0-no_udisks1.patch"
-	"${FILESDIR}/0000-solid-remove-workarounds.patch"
-	"${FILESDIR}/0001-solid-disk-scan.patch"
+	"${FILESDIR}/0-revert-static-cache.patch"
+	"${FILESDIR}/1-add-daemon-interface-cmake.patch"
+	"${FILESDIR}/1-add-daemon-interface.patch"
+	"${FILESDIR}/2-fixes-from-git.patch"
+	"${FILESDIR}/3-move-scanning-to-daemon.patch"
 )
 
 pkg_pretend() {

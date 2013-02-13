@@ -1,0 +1,12 @@
+Index: kdelibs-4.10.0/solid/solid/CMakeLists.txt
+===================================================================
+--- kdelibs-4.10.0.orig/solid/solid/CMakeLists.txt
++++ kdelibs-4.10.0/solid/solid/CMakeLists.txt
+@@ -282,6 +282,7 @@ if(NOT WIN32 AND NOT APPLE)
+            backends/udisks2/udisksstorageaccess.cpp
+            backends/udisks2/udisksgenericinterface.cpp
+            backends/udisks2/dbus/manager.cpp
++           backends/udisks2/diskscannerinterface.cpp
+            )
+        else ( WITH_SOLID_UDISKS2 )
+            message(STATUS "Building Solid UDisks backend." )
