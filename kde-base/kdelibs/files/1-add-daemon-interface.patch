@@ -1,7 +1,7 @@
 Index: kdelibs-4.10.0/solid/solid/backends/udisks2/diskscannerinterface.cpp
 ===================================================================
 --- /dev/null
-+++ kdelibs-4.10.0/solid/solid/backends/udisks2/diskscannerinterface.cpp
++++ /solid/solid/backends/udisks2/diskscannerinterface.cpp
 @@ -0,0 +1,32 @@
 +#include "diskscannerinterface.h"
 +
@@ -38,7 +38,7 @@ Index: kdelibs-4.10.0/solid/solid/backends/udisks2/diskscannerinterface.cpp
 Index: kdelibs-4.10.0/solid/solid/backends/udisks2/diskscannerinterface.h
 ===================================================================
 --- /dev/null
-+++ kdelibs-4.10.0/solid/solid/backends/udisks2/diskscannerinterface.h
++++ /solid/solid/backends/udisks2/diskscannerinterface.h
 @@ -0,0 +1,36 @@
 +#ifndef DISKSCANNERPROXY_CPP_1360423945
 +#define DISKSCANNERPROXY_CPP_1360423945
