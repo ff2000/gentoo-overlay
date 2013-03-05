@@ -41,7 +41,7 @@ COMMONDEPEND="
 	media-libs/fontconfig
 	media-libs/freetype:2
 	media-libs/giflib
-	>=media-libs/libpng-1.4:=
+	media-libs/libpng:0=
 	>=media-libs/phonon-4.4.3
 	sys-libs/zlib
 	virtual/jpeg
@@ -143,7 +143,6 @@ PATCHES=(
 	"${FILESDIR}/0-revert-static-cache.patch"
 	"${FILESDIR}/1-add-daemon-interface-cmake.patch"
 	"${FILESDIR}/1-add-daemon-interface.patch"
-	"${FILESDIR}/2-fixes-from-git.patch"
 	"${FILESDIR}/3-move-scanning-to-daemon.patch"
 )
 
