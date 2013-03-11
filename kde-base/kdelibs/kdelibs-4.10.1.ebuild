@@ -91,6 +91,7 @@ COMMONDEPEND="
 DEPEND="${COMMONDEPEND}
 	doc? ( app-doc/doxygen )
 	nls? ( virtual/libintl )
+	!kde-misc/soliddiskscan
 "
 RDEPEND="${COMMONDEPEND}
 	!dev-qt/qtphonon
@@ -108,7 +109,6 @@ RDEPEND="${COMMONDEPEND}
 	udev? ( app-misc/media-player-info )
 "
 PDEPEND="
-	udisks? ( kde-misc/soliddiskscan )
 	$(add_kdebase_dep katepart)
 	|| (
 		$(add_kdebase_dep kfmclient)
@@ -140,10 +140,9 @@ PATCHES=(
 	"${FILESDIR}/${PN}-4.8.1-norpath.patch"
 	"${FILESDIR}/${PN}-4.9.3-werror.patch"
     "${FILESDIR}/${PN}-4.10.0-no_udisks1.patch"
-	"${FILESDIR}/0-revert-static-cache.patch"
-	"${FILESDIR}/1-add-daemon-interface-cmake.patch"
-	"${FILESDIR}/1-add-daemon-interface.patch"
-	"${FILESDIR}/3-move-scanning-to-daemon.patch"
+	"${FILESDIR}/0-remove-old-workarounds.patch"
+	"${FILESDIR}/1-add-scanner-service.patch"
+	"${FILESDIR}/fix_opticaldisk_label.patch"
 )
 
 pkg_pretend() {

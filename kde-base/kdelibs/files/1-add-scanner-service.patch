@@ -1,0 +1,407 @@
+diff --git a/solid/solid/CMakeLists.txt b/solid/solid/CMakeLists.txt
+index 8142c71..9eb57a4 100644
+--- a/solid/solid/CMakeLists.txt
++++ b/solid/solid/CMakeLists.txt
+@@ -288,6 +288,27 @@ if(NOT WIN32 AND NOT APPLE)
+            backends/udisks2/udisksgenericinterface.cpp
+            backends/udisks2/dbus/manager.cpp
+            )
++           qt4_generate_dbus_interface(backends/udisks2/diskscanner.h org.kde.Solid.DiskScanner.xml)
++           set(soliddiskscan_SRCS
++           backends/udisks2/diskscanner.cpp
++           )
++           qt4_add_dbus_adaptor(soliddiskscan_SRCS
++           ${CMAKE_CURRENT_BINARY_DIR}/org.kde.Solid.DiskScanner.xml
++           backends/udisks2/diskscanner.h
++           Solid::Backends::UDisks2::DiskScanner
++           diskscanneradaptor)
++           kde4_add_executable(soliddiskscan ${soliddiskscan_SRCS})
++           target_link_libraries(soliddiskscan
++           ${KDE4_KDEUI_LIBS}
++           ${KDE4_SOLID_LIBS})
++           install(TARGETS soliddiskscan DESTINATION ${LIBEXEC_INSTALL_DIR})
++           configure_file(backends/udisks2/org.kde.Solid.DiskScanner.service.cmake
++           ${CMAKE_CURRENT_BINARY_DIR}/org.kde.Solid.DiskScanner.service)
++           install(FILES ${CMAKE_CURRENT_BINARY_DIR}/org.kde.Solid.DiskScanner.service
++           DESTINATION ${DBUS_SERVICES_INSTALL_DIR})
++           qt4_add_dbus_interface(solid_LIB_SRCS
++           ${CMAKE_CURRENT_BINARY_DIR}/org.kde.Solid.DiskScanner.xml
++           diskscannerinterface)
+        endif ( WITH_SOLID_UDISKS2 )
+    endif (CMAKE_SYSTEM_NAME MATCHES Linux)
+ 
+diff --git a/solid/solid/backends/udisks2/diskscanner.cpp b/solid/solid/backends/udisks2/diskscanner.cpp
+new file mode 100644
+index 0000000..8f44aac
+--- /dev/null
++++ b/solid/solid/backends/udisks2/diskscanner.cpp
+@@ -0,0 +1,241 @@
++/*
++    Copyright 2013 Alexander Mezin <mezin.alexander@gmail.com>
++
++    This library is free software; you can redistribute it and/or
++    modify it under the terms of the GNU Lesser General Public
++    License as published by the Free Software Foundation; either
++    version 2.1 of the License, or (at your option) version 3, or any
++    later version accepted by the membership of KDE e.V. (or its
++    successor approved by the membership of KDE e.V.), which shall
++    act as a proxy defined in Section 6 of version 3 of the license.
++
++    This library is distributed in the hope that it will be useful,
++    but WITHOUT ANY WARRANTY; without even the implied warranty of
++    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++    Lesser General Public License for more details.
++
++    You should have received a copy of the GNU Lesser General Public
++    License along with this library. If not, see <http://www.gnu.org/licenses/>.
++*/
++
++#include "diskscanner.h"
++
++#include <fcntl.h>
++#include <sys/stat.h>
++#include <sys/types.h>
++#include <unistd.h>
++
++#include <QtDBus/QDBusConnection>
++#include <QtCore/QFile>
++#include <QtCore/QMetaClassInfo>
++#include <QtCore/QMetaObject>
++#include <QtCore/QDebug>
++
++#include <solid/device.h>
++#include <solid/devicenotifier.h>
++#include <kaboutdata.h>
++#include <kcmdlineargs.h>
++#include <kuniqueapplication.h>
++
++#include "diskscanneradaptor.h"
++
++//Taken from solid/backends/udisks/udisksopticaldisk.cpp
++static Solid::OpticalDisc::ContentType advancedDiscDetect(const QByteArray& device_file, bool &diskFound)
++{
++    /* the discs block size */
++    unsigned short bs;
++    /* the path table size */
++    unsigned short ts;
++    /* the path table location (in blocks) */
++    unsigned int tl;
++    /* length of the directory name in current path table entry */
++    unsigned char len_di = 0;
++    /* the number of the parent directory's path table entry */
++    unsigned int parent = 0;
++    /* filename for the current path table entry */
++    char dirname[256];
++    /* our position into the path table */
++    int pos = 0;
++    /* the path table record we're on */
++    int curr_record = 1;
++
++    Solid::OpticalDisc::ContentType result = Solid::OpticalDisc::NoContent;
++
++    int fd = open(QFile::encodeName(device_file), O_RDONLY);
++    if (fd == -1) {
++        diskFound = false;
++        return result;
++    }
++    diskFound = true;
++
++    /* read the block size */
++    lseek(fd, 0x8080, SEEK_CUR);
++    if (read(fd, &bs, 2) != 2) {
++        qDebug("Advanced probing on %s failed while reading block size", qPrintable(device_file));
++        goto out;
++    }
++
++    /* read in size of path table */
++    lseek(fd, 2, SEEK_CUR);
++    if (read(fd, &ts, 2) != 2) {
++        qDebug("Advanced probing on %s failed while reading path table size", qPrintable(device_file));
++        goto out;
++    }
++
++    /* read in which block path table is in */
++    lseek(fd, 6, SEEK_CUR);
++    if (read(fd, &tl, 4) != 4) {
++        qDebug("Advanced probing on %s failed while reading path table block", qPrintable(device_file));
++        goto out;
++    }
++
++    /* seek to the path table */
++    lseek(fd, bs * tl, SEEK_SET);
++
++    /* loop through the path table entries */
++    while (pos < ts) {
++        /* get the length of the filename of the current entry */
++        if (read(fd, &len_di, 1) != 1) {
++            qDebug("Advanced probing on %s failed, cannot read more entries", qPrintable(device_file));
++            break;
++        }
++
++        /* get the record number of this entry's parent
++           i'm pretty sure that the 1st entry is always the top directory */
++        lseek(fd, 5, SEEK_CUR);
++        if (read(fd, &parent, 2) != 2) {
++            qDebug("Advanced probing on %s failed, couldn't read parent entry", qPrintable(device_file));
++            break;
++        }
++
++        /* read the name */
++        if (read(fd, dirname, len_di) != len_di) {
++            qDebug("Advanced probing on %s failed, couldn't read the entry name", qPrintable(device_file));
++            break;
++        }
++        dirname[len_di] = 0;
++
++        /* if we found a folder that has the root as a parent, and the directory name matches
++           one of the special directories then set the properties accordingly */
++        if (parent == 1) {
++            if (!strcasecmp(dirname, "VIDEO_TS")) {
++                qDebug("Disc in %s is a Video DVD", qPrintable(device_file));
++                result = Solid::OpticalDisc::VideoDvd;
++                break;
++            } else if (!strcasecmp(dirname, "BDMV")) {
++                qDebug("Disc in %s is a Blu-ray video disc", qPrintable(device_file));
++                result = Solid::OpticalDisc::VideoBluRay;
++                break;
++            } else if (!strcasecmp(dirname, "VCD")) {
++                qDebug("Disc in %s is a Video CD", qPrintable(device_file));
++                result = Solid::OpticalDisc::VideoCd;
++                break;
++            } else if (!strcasecmp(dirname, "SVCD")) {
++                qDebug("Disc in %s is a Super Video CD", qPrintable(device_file));
++                result = Solid::OpticalDisc::SuperVideoCd;
++                break;
++            }
++        }
++
++        /* all path table entries are padded to be even,
++           so if this is an odd-length table, seek a byte to fix it */
++        if (len_di % 2 == 1) {
++            lseek(fd, 1, SEEK_CUR);
++            pos++;
++        }
++
++        /* update our position */
++        pos += 8 + len_di;
++        curr_record++;
++    }
++
++    close(fd);
++    return result;
++
++out:
++    /* go back to the start of the file */
++    lseek(fd, 0, SEEK_SET);
++    close(fd);
++    return result;
++}
++
++using namespace Solid::Backends::UDisks2;
++
++DiskScanner::DiskScanner()
++{
++    connect(Solid::DeviceNotifier::instance(), SIGNAL(deviceRemoved(QString)), this, SLOT(deviceRemoved(QString)));
++
++    DiskScannerAdaptor* adaptor = new DiskScannerAdaptor(this);
++    Q_CHECK_PTR(adaptor);
++}
++
++DiskScanner::~DiskScanner()
++{
++
++}
++
++void DiskScanner::deviceRemoved(const QString& device)
++{
++    qDebug() << "Removed device " << device;
++    if (content.remove(device)) {
++        qDebug() << "Removed from cache " << device;
++    }
++}
++
++int DiskScanner::getContent(const QString& udi, const QString& file)
++{
++    qDebug() << "Request for " << udi << ", " << file;
++    if (content.contains(udi)) {
++        qDebug() << udi << " found in cache";
++        return content.value(udi);
++    }
++
++    qDebug() << "Not found in cache" << udi;
++    bool diskIn = false;
++    Solid::OpticalDisc::ContentTypes contents = advancedDiscDetect(file.toAscii(), diskIn);
++    if (diskIn) {
++        content.insert(udi, contents);
++    }
++    return contents;
++}
++
++int main(int argc, char *argv[])
++{
++    KAboutData about("soliddiskscan", "soliddiskscan", ki18n("SolidDiskScan"), "0.1", 
++                     ki18n("Determines types of optical disks"), KAboutData::License_LGPL_V2);
++    about.addAuthor(ki18n("Alexander Mezin"), ki18n("Developer"), "mezin.alexander@gmail.com");
++    KCmdLineArgs::init(argc, argv, &about, KCmdLineArgs::CmdLineArgQt);
++
++    KUniqueApplication::addCmdLineOptions();
++    if (!KUniqueApplication::start()) {
++        qCritical() << "Another instance is running";
++        return 0;
++    }
++
++    KUniqueApplication app;
++    app.disableSessionManagement();
++
++    DiskScanner scanner;
++
++    QDBusConnection conn = QDBusConnection::sessionBus();
++    if (!conn.isConnected()) {
++        qCritical() << "No connection to D-Bus";
++        exit(-1);
++    }
++
++    if (!conn.registerObject("/", &scanner)) {
++        qCritical() << "Can't register object";
++        exit(-2);
++    }
++
++    const QMetaObject &meta = *scanner.metaObject();
++    QMetaClassInfo info = meta.classInfo(meta.indexOfClassInfo("D-Bus Interface"));
++    if (!conn.registerService(info.value())) {
++        qCritical() << "Can't register service";
++        exit(-3);
++    }
++
++    return app.exec();
++}
++
++// kate: indent-mode cstyle; indent-width 4; replace-tabs on; 
+diff --git a/solid/solid/backends/udisks2/diskscanner.h b/solid/solid/backends/udisks2/diskscanner.h
+new file mode 100644
+index 0000000..3836ce9
+--- /dev/null
++++ b/solid/solid/backends/udisks2/diskscanner.h
+@@ -0,0 +1,62 @@
++/*
++    Copyright 2013 Alexander Mezin <mezin.alexander@gmail.com>
++
++    This library is free software; you can redistribute it and/or
++    modify it under the terms of the GNU Lesser General Public
++    License as published by the Free Software Foundation; either
++    version 2.1 of the License, or (at your option) version 3, or any
++    later version accepted by the membership of KDE e.V. (or its
++    successor approved by the membership of KDE e.V.), which shall
++    act as a proxy defined in Section 6 of version 3 of the license.
++
++    This library is distributed in the hope that it will be useful,
++    but WITHOUT ANY WARRANTY; without even the implied warranty of
++    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++    Lesser General Public License for more details.
++
++    You should have received a copy of the GNU Lesser General Public
++    License along with this library. If not, see <http://www.gnu.org/licenses/>.
++*/
++
++#ifndef DISKSCANNER_H
++#define DISKSCANNER_H
++
++#include <QtCore/QObject>
++#include <QtCore/QString>
++#include <QtCore/QMap>
++#include <QtCore/QMetaType>
++
++#include <solid/ifaces/opticaldisc.h>
++
++namespace Solid
++{
++namespace Backends
++{
++namespace UDisks2
++{
++
++class DiskScanner : public QObject
++{
++    Q_OBJECT
++    Q_CLASSINFO("D-Bus Interface", "org.kde.Solid.DiskScanner")
++
++public:
++    DiskScanner();
++    virtual ~DiskScanner();
++
++public slots:
++    int getContent(const QString& udi, const QString& file);
++
++private slots:
++    void deviceRemoved(const QString& device);
++
++private:
++    QMap<QString, Solid::OpticalDisc::ContentTypes> content;
++};
++
++}
++}
++}
++
++#endif // DISKSCANNER_H
++// kate: indent-mode cstyle; indent-width 4; replace-tabs on; 
+diff --git a/solid/solid/backends/udisks2/org.kde.Solid.DiskScanner.service.cmake b/solid/solid/backends/udisks2/org.kde.Solid.DiskScanner.service.cmake
+new file mode 100644
+index 0000000..d6e0ed4
+--- /dev/null
++++ b/solid/solid/backends/udisks2/org.kde.Solid.DiskScanner.service.cmake
+@@ -0,0 +1,3 @@
++[D-BUS Service]
++Name=org.kde.Solid.DiskScanner
++Exec=@LIBEXEC_INSTALL_DIR@/soliddiskscan
+\ No newline at end of file
+diff --git a/solid/solid/backends/udisks2/udisksopticaldisc.cpp b/solid/solid/backends/udisks2/udisksopticaldisc.cpp
+index f1d9bce..c7c9860 100644
+--- a/solid/solid/backends/udisks2/udisksopticaldisc.cpp
++++ b/solid/solid/backends/udisks2/udisksopticaldisc.cpp
+@@ -176,6 +176,8 @@ OpticalDisc::OpticalDisc(Device *dev)
+     /*qDebug() << "\tProperties:" << */ m_udevDevice.deviceProperties(); // initialize the properties DB so that it doesn't crash further down, #298416
+ 
+     m_drive = new Device(m_device->drivePath());
++    m_scanner = new OrgKdeSolidDiskScannerInterface(OrgKdeSolidDiskScannerInterface::staticInterfaceName(), "/", QDBusConnection::sessionBus(), this);
++    m_scanner->setTimeout(5 * 60 * 1000);
+ }
+ 
+ OpticalDisc::~OpticalDisc()
+@@ -240,14 +242,13 @@ Solid::OpticalDisc::ContentTypes OpticalDisc::availableContent() const
+ {
+     Solid::OpticalDisc::ContentTypes m_cachedContent = Solid::OpticalDisc::NoContent;
+     if (!isBlank()) {
+-        const QByteArray deviceFile = m_device->prop("Device").toByteArray();
+-
+         const bool hasData = m_drive->prop("OpticalNumDataTracks").toUInt() > 0;
+         const bool hasAudio = m_drive->prop("OpticalNumAudioTracks").toUInt() > 0;
+ 
+         if ( hasData ) {
+             m_cachedContent |= Solid::OpticalDisc::Data;
+-            m_cachedContent |= advancedDiscDetect(deviceFile);
++            int detected = m_scanner->getContent(m_device->udi(), m_device->prop("Device").toString());
++            m_cachedContent |= static_cast<Solid::OpticalDisc::ContentTypes>(detected);
+         }
+         if ( hasAudio )
+             m_cachedContent |= Solid::OpticalDisc::Audio;
+diff --git a/solid/solid/backends/udisks2/udisksopticaldisc.h b/solid/solid/backends/udisks2/udisksopticaldisc.h
+index 56b8a2f..aef02dd 100644
+--- a/solid/solid/backends/udisks2/udisksopticaldisc.h
++++ b/solid/solid/backends/udisks2/udisksopticaldisc.h
+@@ -28,6 +28,7 @@
+ 
+ #include "udisksstoragevolume.h"
+ #include "udisksdevice.h"
++#include "diskscannerinterface.h"
+ 
+ namespace Solid
+ {
+@@ -56,6 +57,7 @@ private:
+     QString media() const;
+     Device * m_drive;
+     UdevQt::Device m_udevDevice;
++    OrgKdeSolidDiskScannerInterface *m_scanner;
+ };
+ 
+ }
