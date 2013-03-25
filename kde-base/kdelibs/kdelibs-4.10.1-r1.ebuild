@@ -139,8 +139,9 @@ PATCHES=(
 	"${FILESDIR}/${PN}-4.6.3-no_suid_kdeinit.patch"
 	"${FILESDIR}/${PN}-4.8.1-norpath.patch"
 	"${FILESDIR}/${PN}-4.9.3-werror.patch"
+	"${FILESDIR}/${PN}-4.6.2-armlinking.patch"
+	"${FILESDIR}/${PN}-4.10.1-giflib5.patch"
     "${FILESDIR}/${PN}-4.10.0-no_udisks1.patch"
-	"${FILESDIR}/0-remove-old-workarounds.patch"
 	"${FILESDIR}/1-add-scanner-service.patch"
 	"${FILESDIR}/fix_opticaldisk_label.patch"
 )
@@ -155,7 +156,6 @@ pkg_pretend() {
 
 src_prepare() {
 	kde4-base_src_prepare
-	use arm && epatch "${FILESDIR}/${PN}-4.6.2-armlinking.patch"
 
 	# Rename applications.menu (needs 01_gentoo_set_xdg_menu_prefix-1.patch to work)
 	sed -e 's|FILES[[:space:]]applications.menu|FILES applications.menu RENAME kde-4-applications.menu|g' \
