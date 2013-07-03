@@ -1,0 +1,21 @@
+It has never existed in Ruby (maybe JRuby). Fortunately the symbols are
+loaded lazily, so nobody would notice unless they try
+'query::count_messages'.
+
+Signed-off-by: Felipe Contreras <[hidden email]>
+---
+ bindings/ruby/query.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/bindings/ruby/query.c b/bindings/ruby/query.c
+index e5ba1b7..1658ede 100644
+--- a/bindings/ruby/query.c
++++ b/bindings/ruby/query.c
+@@ -180,5 +180,5 @@ notmuch_rb_query_count_messages (VALUE self)
+      * (function may return 0 after printing a message)
+      * Thus there is nothing we can do here...
+      */
+-    return UINT2FIX(notmuch_query_count_messages(query));
++    return UINT2NUM(notmuch_query_count_messages(query));
+ }
+
