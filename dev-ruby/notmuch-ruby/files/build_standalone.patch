@@ -1,0 +1,25 @@
+diff --git a/bindings/ruby/extconf.rb b/bindings/ruby/extconf.rb
+index 6160db2..9c76e4a 100644
+--- a/bindings/ruby/extconf.rb
++++ b/bindings/ruby/extconf.rb
+@@ -5,11 +5,6 @@
+ 
+ require 'mkmf'
+ 
+-dir = File.join('..', '..', 'lib')
+-
+-# includes
+-$INCFLAGS = "-I#{dir} #{$INCFLAGS}"
+-
+ # make sure there are no undefined symbols
+ $LDFLAGS += ' -Wl,--no-undefined'
+ 
+@@ -22,7 +17,7 @@ def have_local_library(lib, path, func, headers = nil)
+   end
+ end
+ 
+-if not have_local_library('libnotmuch.so', dir, 'notmuch_database_create', 'notmuch.h')
++if not have_local_library('libnotmuch.so', '/usr/lib', 'notmuch_database_create', 'notmuch.h')
+   exit 1
+ end
+ 
