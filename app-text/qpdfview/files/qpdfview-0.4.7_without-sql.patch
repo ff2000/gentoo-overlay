@@ -1,19 +1,16 @@
-diff -ru qpdfview-0.4.7.org/sources/database.cpp qpdfview-0.4.7/sources/database.cpp
---- qpdfview-0.4.7.org/sources/database.cpp	2013-12-07 12:29:58.607505415 +0100
-+++ qpdfview-0.4.7/sources/database.cpp	2013-12-07 12:42:34.530473625 +0100
-@@ -511,13 +511,13 @@
- #endif // WITH_SQL
- }
- 
-+#ifdef WITH_SQL
-+
- QString Database::instanceName()
- {
-     return !qApp->objectName().isNull() ? qApp->objectName() : QString("");
- }
+diff -ru qpdfview-0.4.7.org/sources/database.h qpdfview-0.4.7/sources/database.h
+--- qpdfview-0.4.7.org/sources/database.h	2013-12-07 12:29:58.608505415 +0100
++++ qpdfview-0.4.7/sources/database.h	2013-12-07 14:05:13.349265084 +0100
+@@ -64,10 +64,10 @@
+     static Database* s_instance;
+     Database(QObject* parent = 0);
  
 -#ifdef WITH_SQL
 -
- void Database::migrateTabs_v1_v2()
- {
-     QSqlQuery query(m_database);
+     static QString instanceName();
+ 
++#ifdef WITH_SQL
++
+     void migrateTabs_v1_v2();
+     void migrateBookmarks_v1_v2();
+ 
