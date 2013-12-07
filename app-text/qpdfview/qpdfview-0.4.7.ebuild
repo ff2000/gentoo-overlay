@@ -43,6 +43,8 @@ rm_help() {
 }
 
 src_prepare() {
+	# fix building qith USE="-qslite"
+	epatch "${FILESDIR}/${P}_without-sql.patch"
 	l10n_find_plocales_changes "translations" "${PN}_" '.ts'
 	l10n_for_each_locale_do prepare_locale
 	l10n_for_each_disabled_locale_do rm_help
