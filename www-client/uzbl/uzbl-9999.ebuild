@@ -10,10 +10,8 @@ if [[ ${PV} == *9999* ]]; then
 	EGIT_REPO_URI=${EGIT_REPO_URI:-"git://github.com/Dieterbe/uzbl.git"}
 	KEYWORDS=""
 	SRC_URI=""
-	IUSE+=" experimental"
-	use experimental &&
-		EGIT_BRANCH="experimental" &&
-		EGIT_COMMIT="experimental"
+	EGIT_BRANCH="next"
+	EGIT_COMMIT="next"
 else
 	inherit vcs-snapshot
 	KEYWORDS="~amd64 ~x86 ~amd64-linux ~x86-linux"
