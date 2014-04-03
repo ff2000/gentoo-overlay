@@ -104,7 +104,7 @@ src_prepare() {
 }
 
 src_compile() {
-	emake ENABLE_GTK3=$(use gtk3 && echo 1 || echo 0)
+	emake ENABLE_GTK3=$(use gtk3 && echo yes || echo no)
 }
 
 src_install() {
