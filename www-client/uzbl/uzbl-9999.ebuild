@@ -95,11 +95,7 @@ src_prepare() {
 	sed -i "s/-ggdb //g" Makefile ||
 		die "-ggdb removal sed failed"
 
-	# make gtk3 configurable
-	sed -r "s:^(USE_GTK3) = (.*):\1?=\2:" -i Makefile ||
-		die "Makefile sed for gtk3 failed"
-
-	sed -i "s@setup.py install --prefix=\$(PREFIX)@setup.py install --prefix=\$(DESTDIR)/\$(PREFIX)@" Makefile ||
+	sed -i "s@setup.py install --prefix=\$(PREFIX) --root=\$(DESTDIR)@setup.py install --prefix=\$(DESTDIR)/\$(PREFIX)@" Makefile ||
 		die "Makefile sed for install faled"
 
 	# pygtk is python2-only
