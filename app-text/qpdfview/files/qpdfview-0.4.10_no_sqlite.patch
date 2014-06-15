@@ -1,0 +1,20 @@
+--- qpdfview-0.4.10.orig/sources/database.cpp	2014-05-04 10:11:15.000000000 +0200
++++ qpdfview-0.4.10/sources/database.cpp	2014-05-04 20:53:20.000000000 +0200
+@@ -49,6 +49,8 @@
+ #include "documentview.h"
+ #include "bookmarkmenu.h"
+ 
++#ifdef WITH_SQL
++
+ namespace
+ {
+ 
+@@ -81,6 +83,8 @@
+ 
+ } // anonymous
+ 
++#endif // WITH_SQL
++
+ namespace qpdfview
+ {
+ 
