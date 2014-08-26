@@ -17,7 +17,7 @@ else
 fi
 
 PLOCALES="ca_ES cs_CZ de_DE el_GR es_ES es_VE fa_IR fr_FR hu_HU id_ID it_IT ja_JP
-ka_GE nl_NL pl_PL pt_BR pt_PT ro_RO ru_RU sk_SK sr_BA sr_RS sv_SE uk_UA
+ka_GE nl_NL pl_PL pt_BR pt_PT ro_RO ru_RU sk_SK sr sv_SE uk_UA
 zh_CN zh_TW"
 
 inherit l10n multilib qmake-utils qt4-r2 ${VCS_ECLASS}

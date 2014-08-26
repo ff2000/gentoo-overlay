@@ -72,7 +72,7 @@ RDEPEND="${RDEPEND}
 	x11-apps/xsetroot
 	)"
 
-DOCS="AUTHORS BUGS PATCHES README STYLE"
+DOCS="AUTHORS BUGS PATCHES STYLE"
 
 src_unpack() {
 	git-2_src_unpack

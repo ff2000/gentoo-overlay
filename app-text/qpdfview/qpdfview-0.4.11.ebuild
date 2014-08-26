@@ -18,6 +18,8 @@ IUSE="cups dbus djvu mupdf +pdf postscript sqlite +svg synctex"
 
 RDEPEND="dev-qt/qtcore:5
 	dev-qt/qtgui:5
+	dev-qt/qtwidgets:5
+	dev-qt/qtprintsupport:5
 	dev-qt/linguist:5
 	cups? ( net-print/cups )
 	dbus? ( dev-qt/qtdbus:5 )
@@ -47,8 +49,6 @@ src_prepare() {
 	#sed -i "s/-lmupdf-js-none//" fitz-plugin.pro ||
 	#	die "sed fitz-plugin failed"
 
-	epatch "${FILESDIR}/${P}_no_sqlite.patch"
-
 	l10n_find_plocales_changes "translations" "${PN}_" '.ts'
 	l10n_for_each_locale_do prepare_locale
 	l10n_for_each_disabled_locale_do rm_help
@@ -64,7 +64,7 @@ src_configure() {
 			config+=" without_${i}"
 		fi
 	done
-	
+
 	if use mupdf ; then
 		config+=" with_fitz without_pdf"
 	fi
