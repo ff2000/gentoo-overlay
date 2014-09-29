@@ -47,7 +47,7 @@ DEPEND="
 		dev-qt/qtprintsupport:5
 		dev-qt/qtscript:5
 		dev-qt/qtsql:5
-		dev-qt/qtwebkit:5[widgets]
+		dev-qt/qtwebkit:5
 		dbus? ( dev-qt/qtdbus:5 )
 	)
 	"
