@@ -45,6 +45,8 @@ rm_help() {
 	fi
 }
 
+PATCHES="${FILESDIR}/${P}-no_sql.patch"
+
 src_prepare() {
 	#sed -i "s/-lmupdf-js-none//" fitz-plugin.pro ||
 	#	die "sed fitz-plugin failed"
