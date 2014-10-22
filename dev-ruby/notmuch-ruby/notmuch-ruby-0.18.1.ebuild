@@ -9,18 +9,18 @@ inherit ruby-ng
 
 DESCRIPTION="Ruby bindings for notmuch"
 HOMEPAGE="http://www.notmuch.org"
-SRC_URI="${HOMEPAGE%/}/releases/${P/-ruby/}.tar.gz"
+MY_P="${P/-ruby/}"
+SRC_URI="${HOMEPAGE%/}/releases/${MY_P}.tar.gz"
 
 LICENSE="GPL-3"
 SLOT="0"
 KEYWORDS="~amd64 ~x86"
 IUSE=""
 
-DEPEND="=net-mail/notmuch-${PV}"
-RDEPEND="${DEPEND}"
-PDEPEND="dev-ruby/mail"
+DEPEND+="=net-mail/notmuch-${PV}"
+RDEPEND+="=net-mail/notmuch-${PV}"
 
-RUBY_S="${P/-ruby/}"
+RUBY_S="${MY_P}"
 
 all_ruby_unpack() {
 	unpack ${A}
@@ -31,16 +31,13 @@ each_ruby_prepare() {
 }
 
 each_ruby_configure() {
-	# pushd bindings/ruby
-	${RUBY} -Cbindings/ruby extconf.rb || die "ruby config failed"
+	${RUBY} -Cbindings/ruby extconf.rb || die "ruby configure failed"
 }
 
 each_ruby_compile() {
-	# pushd bindings/ruby
-	emake -Cbindings/ruby || die "ruby compile failed"
+	emake V=1 -Cbindings/ruby || die "ruby compile failed"
 }
 
 each_ruby_install() {
-	# pushd bindings/ruby
-	emake -Cbindings/ruby DESTDIR="${D}" install || die "ruby install failed"
+	emake V=1 -Cbindings/ruby DESTDIR="${D}" install || die "ruby install failed"
 }
