@@ -3,7 +3,7 @@
 # $Header: $
 
 EAPI=5
-USE_RUBY="ruby19 ruby20 ruby21"
+USE_RUBY="ruby19 ruby20 ruby21 ruby22"
 
 inherit ruby-ng
 
@@ -17,8 +17,8 @@ SLOT="0"
 KEYWORDS="~amd64 ~x86"
 IUSE=""
 
-DEPEND+="=net-mail/notmuch-${PV}"
-RDEPEND+="=net-mail/notmuch-${PV}"
+DEPEND+="~net-mail/notmuch-${PV}"
+RDEPEND+="${DEPEND}"
 
 RUBY_S="${MY_P}"
 
