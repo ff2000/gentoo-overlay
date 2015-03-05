@@ -23,10 +23,13 @@ DEPEND="${PYTHON_DEPS}
 		dev-python/notify-python[${PYTHON_USEDEP}]
 		dev-python/python-mpd[${PYTHON_USEDEP}]"
 
+S="${WORKDIR}/${MY_PN}-${PV}"
+
 src_prepare() {
 	eautoreconf
 }
 
 src_install() {
 	emake install DESTDIR="${D}" || die "Failed to install"
+	python_fix_shebang "${ED}"usr/bin
 }
