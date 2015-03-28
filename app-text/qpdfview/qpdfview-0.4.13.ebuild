@@ -4,7 +4,7 @@
 
 EAPI=5
 
-PLOCALES="ast az bg bs ca cs da de el en_GB eo es eu fi fr gl he hr id it kk ky ms my pl pt pt_BR ro ru sk tr ug uk zh_CN"
+PLOCALES="ast az be bg bs ca cs da de el en_GB eo es eu fi fr gl he hr id it kk ko ky lt ms my pl pt_BR pt ro ru sk sv th tr ug uk vi zh_CN"
 inherit l10n multilib qmake-utils base
 
 DESCRIPTION="A tabbed document viewer"
@@ -20,7 +20,7 @@ RDEPEND="dev-qt/qtcore:5
 	dev-qt/qtgui:5
 	dev-qt/qtwidgets:5
 	dev-qt/qtprintsupport:5
-	dev-qt/linguist:5
+	dev-qt/qtconcurrent:5
 	cups? ( net-print/cups )
 	dbus? ( dev-qt/qtdbus:5 )
 	djvu? ( app-text/djvu )
@@ -36,7 +36,7 @@ DEPEND="${RDEPEND}
 DOCS=( CHANGES CONTRIBUTORS README TODO )
 
 prepare_locale() {
-	/usr/$(get_libdir)/qt5/bin/lrelease "translations/${PN}_${1}.ts" || die "preparing ${1} locale failed"
+	lrelease "translations/${PN}_${1}.ts" || die "preparing ${1} locale failed"
 }
 
 rm_help() {
@@ -44,8 +44,6 @@ rm_help() {
 		rm "miscellaneous/help_${1}.html" || die "removing extraneous help files failed"
 	fi
 }
-
-PATCHES="${FILESDIR}/${P}-no_sql.patch"
 
 src_prepare() {
 	#sed -i "s/-lmupdf-js-none//" fitz-plugin.pro ||

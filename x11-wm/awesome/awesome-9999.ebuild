@@ -5,7 +5,7 @@
 EAPI="5"
 CMAKE_MIN_VERSION="2.8"
 
-EGIT_REPO_URI="git://git.naquadah.org/awesome.git"
+EGIT_REPO_URI="https://github.com/awesomeWM/awesome.git"
 
 inherit git-2 cmake-utils eutils
 
