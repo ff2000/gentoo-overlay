@@ -48,6 +48,7 @@ RDEPEND="${COMMON_DEPEND}
 # paxctl needed for bug #407085
 # eautoreconf requires gnome-common-3.5.5
 DEPEND="${COMMON_DEPEND}
+	>=gnome-base/gnome-common-3.5.5
 	>=dev-util/intltool-0.50
 	sys-apps/paxctl
 	sys-devel/gettext
