@@ -4,6 +4,7 @@
 
 EAPI="5"
 CMAKE_MIN_VERSION="2.8"
+CMAKE_MAKEFILE_GENERATOR="emake"
 
 EGIT_REPO_URI="https://github.com/awesomeWM/awesome.git"
 
@@ -18,7 +19,7 @@ SLOT="0"
 KEYWORDS=""
 IUSE="dbus doc elibc_FreeBSD gnome"
 
-COMMON_DEPEND=">=dev-lang/lua-5.1
+COMMON_DEPEND="dev-lang/lua:5.1
 	>=dev-libs/libxdg-basedir-1
 	x11-libs/cairo[xcb]
 	|| ( <x11-libs/libX11-1.3.99.901[xcb] >=x11-libs/libX11-1.3.99.901 )
@@ -72,18 +73,18 @@ RDEPEND="${RDEPEND}
 	x11-apps/xsetroot
 	)"
 
-DOCS="AUTHORS BUGS PATCHES STYLE"
+DOCS=""
 
 src_unpack() {
 	git-2_src_unpack
 }
 
 src_prepare() {
-	epatch \
-		"${FILESDIR}/${PN}-backtrace.patch"
-
 	# bug  #408025
 	epatch "${FILESDIR}/${PN}-convert-path.patch"
+
+	# make lgi_check.sh happy with slotted lua
+	epatch "${FILESDIR}/slotted_lgi_check.patch"
 
 	epatch_user
 }
@@ -92,6 +93,8 @@ src_configure() {
 	mycmakeargs=(
 		-DPREFIX="${EPREFIX}"/usr
 		-DSYSCONFDIR="${EPREFIX}"/etc
+		-DLUA_INCLUDE_DIR=/usr/include/lua5.1
+		-DLUA_LIBRARIES="${EPREFIX}/usr/$(get_libdir)/liblua5.1.so;${EPREFIX}/usr/$(get_libdir)/libm.so"
 		$(cmake-utils_use_with dbus DBUS)
 		)
 
